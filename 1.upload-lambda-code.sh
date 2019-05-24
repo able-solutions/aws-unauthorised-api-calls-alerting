@@ -18,9 +18,9 @@ read BucketName
 #echo -n "Enter the ARN of the role you wish to implement: "
 #read Role
 
-git archive -o "$ZipFileName.zip" $FilesToBeZipped
+git archive -o "$ZipFileName.zip" HEAD $FilesToBeZipped
 
-aws s3api put-object --bucket $BucketName --key "./$ZipFileName.zip" --body "./$ZipFileName.zip" --profile $AWSProfile
+aws s3api put-object --bucket $BucketName --key "$ZipFileName.zip" --body "$ZipFileName.zip" --profile $AWSProfile
 
 #aws lambda create-function --function-name $FunctionName --runtime nodejs \
 #--role $Role --handler "$ZipFileName.handler" \
