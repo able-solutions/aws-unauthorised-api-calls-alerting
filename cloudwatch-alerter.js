@@ -9,7 +9,7 @@ let initialised = false;
 var slackHook = process.env.SlackHook;
 var slackUsername = process.env.SlackUsername;
 var slackChannel = process.env.SlackChannel;
-var emoji = ":awssecurity:";
+var emoji = ":no_entry_sign:";
 var color = "#C70039";
 
 //wait Function
@@ -60,13 +60,12 @@ exports.handler = async (event, context) => {
     
     initialised = true;
     const rule = event.Rule;
-    const logEvents = event.LogEvent;
+    const logEvents = event.LogEvents;
     
     for (var each of logEvents) {
       
       let message = JSON.parse(each.message);
       let userIdentity = message.userIdentity;
-      let requestParameters = message.requestParameters;
       let principal = userIdentity.arn;
       let eventName = message.eventName;
       let eventTime = message.eventTime;
@@ -76,10 +75,6 @@ exports.handler = async (event, context) => {
       let region = message.awsRegion;
       let accountNumber = userIdentity.accountId;
       let eventID = message.eventID;
-      
-      if(eventSource === 's3.amazonaws.com') {
-        let host = requestParameters.host;
-      }
       
       if(rule === 'UnauthorisedAPICalls') {
         
@@ -123,20 +118,13 @@ exports.handler = async (event, context) => {
                   "type": "button",
                   "style": "primary",
                   "url": `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logEventViewer:group=aws-management-cloudtrail-logs;stream=${accountNumber}_CloudTrail_${region};filter=%257B%2520%2524.eventID%2520%253D%2520${eventID}%2520%257D`
-                },
-                {
-                  "name": "ISF16B",
-                  "text": "Raise ISF16B",
-                  "type": "button",
-                  "style": "danger",
-                  "url": "https://contactpartnersdev.atlassian.net/servicedesk/customer/portal/6/group/24"
                 }
               ]
             },
             {
               "color": "#32CD32",
               "title": "Retention",
-              "footer": "The data for this finding will be retained within Amazon CloudWatch Logs for 1 year."
+              "footer": "The data for this finding will be retained within Amazon CloudWatch Logs as per the log group retention set."
             }
           ]
         };
@@ -146,9 +134,9 @@ exports.handler = async (event, context) => {
           await postMessage(UnauthorisedAPICallMessage);
           await wait();
 
-        } catch(error) {
+        } catch(e) {
 
-          console.log(error);
+          console.error(e);
 
         }
         
@@ -158,7 +146,7 @@ exports.handler = async (event, context) => {
     
   } else {
     
-    console.log('Already Initialised');
+    console.log('Already Initialised or Rules Detected');
     
   }
 

@@ -4,7 +4,7 @@ const zlib = require('zlib');
 
 let initialised = false;
 
-const cisLambda = process.env.CISAlarmLambdaArn;
+const cloudwatchAlerter = process.env.CloudWatchAlerterLambdaArn;
 
 exports.handler = async (event, context) => {
 
@@ -22,11 +22,11 @@ exports.handler = async (event, context) => {
     
     const newPayload = JSON.stringify({
       Rule: rule,
-      LogEvent: logData
+      LogEvents: logData
     });
     
     var invokelambdaParams = {
-      FunctionName: cisLambda,
+      FunctionName: cloudwatchAlerter,
       LogType: 'Tail',
       InvocationType: "Event",
       Payload: newPayload
@@ -39,7 +39,7 @@ exports.handler = async (event, context) => {
     
   } else {
     
-    console.log('No Log Events to process');
+    console.log('No Log Events to Process');
     
   }
 

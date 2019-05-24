@@ -2,9 +2,9 @@
 "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS CloudFormation template that creates all the AWS resources needed for alerting when Unauthorised API calls are detected within CloudTrail",
   "Parameters": {
-    "EmaiAdress": {
-      "Type": "List",
-      "Description": "Enter the email addresses that you would like to recieve alerts",
+    "EmailAddress": {
+      "Type": "String",
+      "Description": "Enter the email address that you would like to receive alerts",
       "Default": ""
     },
     "S3BucketName": {
@@ -12,9 +12,9 @@
       "Description": "Enter a name for the S3 Bucket used to store CloudTrail logs.",
       "Default": ""
     },
-    "LogRetention": {
+    "CloudTrailLogGroupName": {
       "Type": "String",
-      "Description": "Choose how long you would like to retain CloudTrail logs for.",
+      "Description": "Enter a name for the CloudTrail Log Group to be created in CloudWatch",
       "Default": ""
     },
     "SlackChannel": {
@@ -34,19 +34,86 @@
     }
   },
   "Resources": {
-    "CloudTrailLogGroup": {
+    "CloudTrailLogsRole": {
 
+    },
+    "CloudTrailLogGroup": {
+      "Type" : "AWS::Logs::LogGroup",
+      "Properties" : {
+        "LogGroupName" : { "Ref": "CloudTrailLogGroupName" },
+        "RetentionInDays" : 90
+      }
     },
     "S3Bucket": {
-
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "Private",
+        "VersioningConfiguration": {
+          "Status": "Suspended"
+        },
+        "LoggingConfiguration" : {
+          "LogFilePrefix" : "access-logs/"
+        },
+        "BucketEncryption" : {
+          "ServerSideEncryptionConfiguration" : [ { "ServerSideEncryptionByDefault" : { "SSEAlgorithm" : "AES256" } } ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls" : true,
+          "BlockPublicPolicy" : true,
+          "IgnorePublicAcls" : true,
+          "RestrictPublicBuckets" : true
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Centralised Logging S3 Bucket"
+          },
+          {
+            "Key": "Project",
+            "Value": "Able Solutions"
+          }
+        ]
+      }
     },
     "CloudTrail": {
-
+      "DependsOn": [ "CloudTrailLogsRole", "CloudTrailLogGroup", "S3Bucket" ],
+      "Type": "AWS::CloudTrail::Trail",
+      "Properties": {
+        "CloudWatchLogsLogGroupArn" : { "Fn::GetAtt": [ "CloudTrailLogGroup", "Arn" ] },
+        "CloudWatchLogsRoleArn" : { "Fn::GetAtt": [ "CloudTrailLogsRole", "Arn" ] },
+        "IncludeGlobalServiceEvents": true,
+        "IsLogging": true,
+        "EnableLogFileValidation": true,
+        "IsMultiRegionTrail" : true,
+        "S3BucketName": { "Ref": "S3Bucket" },
+        "S3KeyPrefix": { "Ref": "CloudTrailLogGroupName" },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "CloudTrail"
+          },
+          {
+            "Key": "Project",
+            "Value": "Able Solutions"
+          }
+        ]
+      }
     },
-    "CloudWatchLogMetricFilter": {
-
+    "UnauthorisedAPICallMetricFilter": {
+      "Type" : "AWS::Logs::MetricFilter",
+      "Properties" : {
+        "FilterPattern" : "{ ($.errorCode = *UnauthorizedOperation) || ($.errorCode = AccessDenied*) }",
+        "LogGroupName" : { "Ref": "CloudTrailLogGroupName" },
+        "MetricTransformations" : [
+          {
+            "MetricValue": "1",
+            "MetricNamespace": "LogMetrics",
+            "MetricName": "UnauthorizedAPICallsCount"
+          }
+        ]
+      }
     },
-    "CloudWatchLogSubscription": {
+    "UnauthorisedAPICallLogSubscription": {
 
     },
     "LambdaIAMRole": {
@@ -58,14 +125,43 @@
     "LambdaFunctionCloudWatchAlerter": {
 
     },
-    "CloudWatchAlarm": {
-
+    "CloudWatchProcessorToCloudWatchAlerterPermission": {
+      "DependsOn": [ "LambdaFunctionCloudWatchAlerter", "LambdaFunctionCloudWatchLogProcessor" ],
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": { "Ref": "LambdaFunctionCloudWatchAlerter" },
+        "Principal": "lambda.amazonaws.com",
+        "SourceArn": { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] }
+      } 
+    },
+    "CloudTrailLogGroupSubscription": {
+      "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudWatchProcessorToCloudWatchAlerterPermission" ],
+      "Type" : "AWS::Logs::SubscriptionFilter",
+      "Properties" : {
+        "DestinationArn" : { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] },
+        "FilterPattern" : "{ ($.errorCode = *UnauthorizedOperation) || ($.errorCode = AccessDenied*) }",
+        "LogGroupName" : { "Ref": "CloudTrailLogGroupName" }
+      }
     },
     "SNSTopic": {
 
+    },
+    "CloudWatchAlarm": {
+      "DependsOn": [ "UnauthorisedAPICallMetricFilter", "SNSTopic" ],
+      "Type" : "AWS::CloudWatch::Alarm",
+      "Properties" : {
+        "AlarmDescription" : "Alarm to capture all unauthorised API calls",
+        "AlarmName" : "UnauthorizedAPICalls",
+        "ComparisonOperator" : "GreaterThanThreshold",
+        "EvaluationPeriods" : 1,
+        "MetricName" : "UnauthorizedAPICallsCount",
+        "Namespace": "LogMetrics",
+        "Statistic": "Sum",
+        "TreatMissingData": "notBreaching",
+        "Threshold" : 0,
+        "Period": 60
+      }
     }
-  },
-  "Outputs": {
-
   }
 }
