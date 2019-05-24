@@ -1,5 +1,5 @@
 {
-"AWSTemplateFormatVersion": "2010-09-09",
+  "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "AWS CloudFormation template that creates all the AWS resources needed for alerting when Unauthorised API calls are detected within CloudTrail",
   "Parameters": {
     "EmailAddress": {
