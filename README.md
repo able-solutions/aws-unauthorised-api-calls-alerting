@@ -21,6 +21,7 @@ When deployed, this repository will create/provisions AWS resources in the AWS a
 
   - CloudTrail
   - IAM Roles
+  - S3 Bucket
   - Lambda Functions
   - CloudWatch Log Group
   - CloudWatch Alarm
