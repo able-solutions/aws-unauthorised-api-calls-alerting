@@ -114,7 +114,13 @@
       }
     },
     "UnauthorisedAPICallLogSubscription": {
-
+      "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudWatchProcessorToCloudWatchAlerterPermission" ],
+      "Type" : "AWS::Logs::SubscriptionFilter",
+      "Properties" : {
+        "DestinationArn" : { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] },
+        "FilterPattern" : "{ ($.errorCode = *UnauthorizedOperation) || ($.errorCode = AccessDenied*) }",
+        "LogGroupName" : { "Ref": "CloudTrailLogGroupName" }
+      }
     },
     "LambdaIAMRole": {
 
@@ -135,17 +141,18 @@
         "SourceArn": { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] }
       } 
     },
-    "CloudTrailLogGroupSubscription": {
-      "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudWatchProcessorToCloudWatchAlerterPermission" ],
-      "Type" : "AWS::Logs::SubscriptionFilter",
-      "Properties" : {
-        "DestinationArn" : { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] },
-        "FilterPattern" : "{ ($.errorCode = *UnauthorizedOperation) || ($.errorCode = AccessDenied*) }",
-        "LogGroupName" : { "Ref": "CloudTrailLogGroupName" }
-      }
-    },
     "SNSTopic": {
-
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "Unauthorised-API-Calls",
+        "DisplayName": "Unauthorised API Calls",
+        "Subscription": [
+          {
+            "Endpoint" : { "Ref": "EmailAddress" },
+            "Protocol" : "email"
+          }
+        ]
+      }
     },
     "CloudWatchAlarm": {
       "DependsOn": [ "UnauthorisedAPICallMetricFilter", "SNSTopic" ],
@@ -153,6 +160,7 @@
       "Properties" : {
         "AlarmDescription" : "Alarm to capture all unauthorised API calls",
         "AlarmName" : "UnauthorizedAPICalls",
+        "AlarmActions": [ { "Ref": "SNSTopic" } ],
         "ComparisonOperator" : "GreaterThanThreshold",
         "EvaluationPeriods" : 1,
         "MetricName" : "UnauthorizedAPICallsCount",
