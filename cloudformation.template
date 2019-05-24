@@ -7,6 +7,11 @@
       "Description": "Enter the email address that you would like to receive alerts",
       "Default": ""
     },
+    "S3LambdaBucket": {
+      "Type": "String",
+      "Description": "Enter the name of the S3 Bucket where the lambda code is stored.",
+      "Default": ""
+    },
     "S3BucketName": {
       "Type": "String",
       "Description": "Enter a name for the S3 Bucket used to store CloudTrail logs.",
@@ -35,7 +40,38 @@
   },
   "Resources": {
     "CloudTrailLogsRole": {
-
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "cloudtrail.amazonaws.com"
+                ]
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "RoleName": "CloudTrail-Logs-Role",
+        "Policies": [
+          {
+            "PolicyName": "Logs",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [ "logs" ],
+                  "Resource": [ "*" ]
+                }
+              ]
+            }
+          }
+        ]
+      }
     },
     "CloudTrailLogGroup": {
       "Type" : "AWS::Logs::LogGroup",
@@ -123,13 +159,144 @@
       }
     },
     "LambdaIAMRole": {
-
-    },
-    "LambdaFunctionCloudWatchLogProcessor": {
-
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com",
+                  "logs.amazonaws.com"
+                ]
+              },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "CloudWatch",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [ "logs:*" ],
+                  "Resource": [ "*" ]
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "SNS",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [ "sns:Publish*" ],
+                  "Resource": [ "*" ]
+                }
+              ]
+            }
+          },
+          {
+            "PolicyName": "Lambda",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [ "lambda:InvokeFunction" ],
+                  "Resource": [ { "Fn::Join": [ ":", [ "arn:aws:lambda", { "Ref": "AWS::Region" }, { "Ref": "AWS::AccountId" }, "function", "*", "*" ] ] } ]
+                }
+              ]
+            }
+          }
+        ],
+        "RoleName": "Lambda-Function-Role"
+      }
     },
     "LambdaFunctionCloudWatchAlerter": {
-
+      "DependsOn": [ "LambdaIAMRole" ],
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Description": "Lambda Function that posts CloudWatch alarm states to Slack",
+        "Handler": "cloudwatch-alerter.handler",
+        "FunctionName": "CloudWatchAlerter",
+        "Role": {
+          "Fn::GetAtt": [ "LambdaIAMRole", "Arn" ]
+        },
+        "Code": {
+          "S3Bucket": { "Ref": "S3LambdaBucket" },
+          "S3Key": "lambdaCode.zip"
+        },
+        "Environment": {
+          "Variables" : {
+            "SlackChannel": {
+              "Ref": "SlackChannel"
+            },
+            "SlackHook": {
+              "Ref": "SlackHook"
+            },
+            "SlackUsername": {
+              "Ref": "SlackUsername"
+            }
+          }
+        },
+        "Runtime": "nodejs10.x",
+        "MemorySize": "128",
+        "Timeout": "180",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "CloudWatch Alerter"
+          },
+          {
+            "Key": "Project",
+            "Value": "Able Solutions"
+          }
+        ]
+      }
+    },
+    "LambdaFunctionCloudWatchLogProcessor": {
+      "DependsOn": [ "LambdaIAMRole", "LambdaFunctionCloudWatchAlerter" ],
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Description": "Lambda Function that processes CloudWatch Log data streamed to it",
+        "Handler": "cloudwatch-logs-processor.handler",
+        "FunctionName": "CloudWatch-Logs-Processor",
+        "Role": {
+          "Fn::GetAtt": [ "LambdaIAMRole", "Arn" ]
+        },
+        "Environment": {
+          "Variables" : {
+            "CloudWatchAlerterLambdaArn": {
+              "Fn::GetAtt": [ "LambdaFunctionCloudWatchAlerter", "Arn" ]
+            }
+          }
+        },
+        "Code": {
+          "S3Bucket": { "Ref": "S3LambdaBucket" },
+          "S3Key": "lambdaCode.zip"
+        },
+        "Runtime": "nodejs10.x",
+        "MemorySize": "128",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "CloudWatch Logs Processor"
+          },
+          {
+            "Key": "Project",
+            "Value": "Able Solutions"
+          }
+        ],
+        "Timeout": "60"
+      }
     },
     "CloudWatchProcessorToCloudWatchAlerterPermission": {
       "DependsOn": [ "LambdaFunctionCloudWatchAlerter", "LambdaFunctionCloudWatchLogProcessor" ],
@@ -140,6 +307,16 @@
         "Principal": "lambda.amazonaws.com",
         "SourceArn": { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] }
       } 
+    },
+    "CloudWatchProcessorLambdaPermission": {
+      "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudTrailLogGroup" ],
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": { "Ref": "LambdaFunctionCloudWatchLogProcessor" },
+        "Principal": "logs.amazonaws.com",
+        "SourceArn": { "Fn::GetAtt": [ "CloudTrailLogGroup", "Arn" ] }
+      }  
     },
     "SNSTopic": {
       "Type": "AWS::SNS::Topic",
