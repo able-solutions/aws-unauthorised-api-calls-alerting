@@ -3,13 +3,39 @@
   "Description": "AWS CloudFormation template that creates all the AWS resources needed for alerting when Unauthorised API calls are detected within CloudTrail",
   "Parameters": {
     "EmaiAdress": {
-
+      "Type": "List",
+      "Description": "Enter the email addresses that you would like to recieve alerts",
+      "Default": ""
     },
     "S3BucketName": {
-
+      "Type": "String",
+      "Description": "Enter a name for the S3 Bucket used to store CloudTrail logs.",
+      "Default": ""
     },
     "LogRetention": {
-
+      "Type": "String",
+      "Description": "Choose how long you would like to retain CloudTrail logs for.",
+      "Default": ""
+    },
+    "SlackChannel": {
+      "Type": "String",
+      "Description": "Enter the Slack channel you would like to post alerts to. This will start with #",
+      "Default": ""
+    },
+    "SlackWebHook": {
+      "Type": "String",
+      "Description": "Copy the URL for the Webhook created for the Slack channel just specified.",
+      "Default": ""
+    },
+    "SlackUsername": {
+      "Type": "String",
+      "Description": "Enter a username that you would like to be displayed, when messages are posted to Slack.",
+      "Default": ""
+    },
+    "Test": {
+      "Type": "String",
+      "Description": "Enter a username that you would like to be displayed, when messages are posted to Slack.",
+      "Default": ""
     }
   },
   "Resources": {
