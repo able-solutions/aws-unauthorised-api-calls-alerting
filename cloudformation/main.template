@@ -31,11 +31,6 @@
       "Type": "String",
       "Description": "Enter a username that you would like to be displayed, when messages are posted to Slack.",
       "Default": ""
-    },
-    "Test": {
-      "Type": "String",
-      "Description": "Enter a username that you would like to be displayed, when messages are posted to Slack.",
-      "Default": ""
     }
   },
   "Resources": {

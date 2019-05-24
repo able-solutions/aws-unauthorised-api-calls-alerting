@@ -17,7 +17,7 @@ The way are notified is by using Slack. In order to achieve this, you will need 
 
 ### AWS Resources this Repo will Deploy ###
 
-When deployed, this repository will create/provisions AWS resources in the AWS account deployed. To that end, please be aware that you will be charged by AWS for any resources/services that you use. 
+When deployed, this repository will create/provisions AWS resources in the AWS account deployed. To that end, please be aware that you will be charged by AWS for any resources services that you use. 
 
   - CloudTrail
   - IAM Roles
