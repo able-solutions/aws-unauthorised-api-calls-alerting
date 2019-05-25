@@ -1,18 +1,45 @@
 ---
 # tasks file for api-alerter
+
+# Create a zip archive of /path/to/foo
+- name: create lambda.zip for deployment
+  archive:
+    path:
+      - "{{ lambda_src_path }}/cloudwatch-alerter.js"
+      - "{{ lambda_src_path }}/cloudwatch-logs-processor.js"
+    dest: "{{ lambda_dist_path }}/{{ lambda_file }}"
+    format: zip
+
+# Copy lambda.zip asset to s3 
+- name: PUT api-alerter.template to s3 bucket
+  aws_s3:
+    bucket: "{{ bucket_name }}"
+    object: "/ansible/api-alerter/lambda/{{ lambda_file  }}"
+    src: "{{ lambda_dist_path }}/{{ lambda_file }}"
+    mode: put
+
+# Copy local .template asset to s3 before running cloudformation
+- name: PUT api-alerter.template to s3 bucket
+  aws_s3:
+    bucket: "{{ bucket_name }}"
+    object: "/ansible/api-alerter/{{ cf_template_file }}"
+    src: "{{ cf_template_path }}/{{ cf_template_file }}"
+    mode: put
+
+
 # Create a stack, pass in template from a URL, disable rollback if stack creation fails,
 # pass in some parameters to the template, provide tags for resources created
-- name: create a stack, pass in the template via an URL
-  cloudformation:
-    stack_name: "ansible-cloudformation"
-    state: present
-    region: us-east-1
-    disable_rollback: true
-    template_url: https://s3.amazonaws.com/my-bucket/cloudformation.template
-    template_parameters:
-      KeyName: jmartin
-      DiskType: ephemeral
-      InstanceType: m1.small
-      ClusterSize: 3
-    tags:
-      Stack: ansible-cloudformation
+#- name: create a stack, pass in the template via an URL
+#  cloudformation:
+#    stack_name: "ansible-cloudformation"
+#    state: present
+#    region: us-east-1
+#    disable_rollback: true
+#    template_url: https://s3.amazonaws.com/my-bucket/cloudformation.template
+#    template_parameters:
+#      KeyName: jmartin
+#      DiskType: ephemeral
+#      InstanceType: m1.small
+#      ClusterSize: 3
+#    tags:
+#      Stack: ansible-cloudformation

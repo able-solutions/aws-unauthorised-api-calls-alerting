@@ -42,3 +42,8 @@ PLAY RECAP *********************************************************************
 localhost                  : ok=2    changed=1    unreachable=0    failed=0
 
 ```
+
+
+```bash
+ansible-playbook create-api-alerter.yml
+```

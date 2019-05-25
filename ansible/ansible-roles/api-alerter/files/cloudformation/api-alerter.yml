@@ -1,0 +1,345 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation template that creates all the AWS resources needed for
+  alerting when Unauthorised API calls are detected within CloudTrail
+Parameters:
+  EmailAddress:
+    Type: String
+    Description: Enter the email address that you would like to receive alerts
+    Default: ''
+  S3LambdaBucket:
+    Type: String
+    Description: Enter the name of the S3 Bucket where the lambda code is stored.
+    Default: ''
+  S3BucketName:
+    Type: String
+    Description: Enter a name for the S3 Bucket used to store CloudTrail logs.
+    Default: ''
+  CloudTrailLogGroupName:
+    Type: String
+    Description: Enter a name for the CloudTrail Log Group to be created in CloudWatch
+    Default: ''
+  SlackChannel:
+    Type: String
+    Description: >-
+      Enter the Slack channel you would like to post alerts to. This will start
+      with #
+    Default: ''
+  SlackHook:
+    Type: String
+    Description: Copy the URL for the Webhook created for the Slack channel just specified.
+    Default: ''
+  SlackUsername:
+    Type: String
+    Description: >-
+      Enter a username that you would like to be displayed, when messages are
+      posted to Slack.
+    Default: ''
+Resources:
+  CloudTrailLogsRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+            Action: 'sts:AssumeRole'
+      RoleName: CloudTrail-Logs-Role
+      Policies:
+        - PolicyName: Logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:*'
+                Resource: '*'
+  CloudTrailLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Ref CloudTrailLogGroupName
+      RetentionInDays: 90
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Suspended
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: Centralised Logging S3 Bucket
+        - Key: Project
+          Value: Able Solutions
+  S3BucketPolicy:
+    DependsOn:
+      - S3Bucket
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Join 
+                  - ':'
+                  - - 'arn:aws:iam:'
+                    - !Ref 'AWS::AccountId'
+                    - root
+            Action:
+              - 's3:GetBucketAcl'
+              - 's3:GetObjectAcl'
+              - 's3:PutBucketAcl'
+              - 's3:PutObjectAcl'
+              - 's3:PutObjectTagging'
+              - 's3:PutObject'
+            Resource:
+              - !Join 
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+              - !Join 
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+                  - /*
+          - Sid: Allow  CloudTrail to Check ACL
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: 's3:*'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Bucket
+          - Sid: Allow CloudTrail to Write
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: 's3:PutObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Bucket
+                - /*
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': bucket-owner-full-control
+          - Sid: Allow CloudTrail to Get
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: 's3:GetObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref S3Bucket
+                - /*
+  CloudTrail:
+    DependsOn:
+      - CloudTrailLogsRole
+      - CloudTrailLogGroup
+      - S3BucketPolicy
+    Type: 'AWS::CloudTrail::Trail'
+    Properties:
+      CloudWatchLogsLogGroupArn: !GetAtt 
+        - CloudTrailLogGroup
+        - Arn
+      CloudWatchLogsRoleArn: !GetAtt 
+        - CloudTrailLogsRole
+        - Arn
+      IncludeGlobalServiceEvents: true
+      IsLogging: true
+      EnableLogFileValidation: true
+      IsMultiRegionTrail: true
+      S3BucketName: !Ref S3Bucket
+      S3KeyPrefix: !Ref CloudTrailLogGroupName
+      Tags:
+        - Key: Name
+          Value: CloudTrail
+        - Key: Project
+          Value: Able Solutions
+  UnauthorisedAPICallMetricFilter:
+    DependsOn:
+      - CloudTrailLogGroup
+    Type: 'AWS::Logs::MetricFilter'
+    Properties:
+      FilterPattern: >-
+        { ($.errorCode = *UnauthorizedOperation) || ($.errorCode =
+        AccessDenied*) }
+      LogGroupName: !Ref CloudTrailLogGroupName
+      MetricTransformations:
+        - MetricValue: '1'
+          MetricNamespace: LogMetrics
+          MetricName: UnauthorizedAPICallsCount
+  UnauthorisedAPICallLogSubscription:
+    DependsOn:
+      - LambdaFunctionCloudWatchLogProcessor
+      - CloudWatchProcessorToCloudWatchAlerterPermission
+    Type: 'AWS::Logs::SubscriptionFilter'
+    Properties:
+      DestinationArn: !GetAtt 
+        - LambdaFunctionCloudWatchLogProcessor
+        - Arn
+      FilterPattern: >-
+        { ($.errorCode = *UnauthorizedOperation) || ($.errorCode =
+        AccessDenied*) }
+      LogGroupName: !Ref CloudTrailLogGroupName
+  LambdaIAMRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - logs.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CloudWatch
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:*'
+                Resource: '*'
+        - PolicyName: SNS
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sns:Publish*'
+                Resource: '*'
+        - PolicyName: Lambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: '*'
+      RoleName: Lambda-Function-Role
+  LambdaFunctionCloudWatchAlerter:
+    DependsOn:
+      - LambdaIAMRole
+      - CloudTrailLogGroup
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Lambda Function that posts CloudWatch alarm states to Slack
+      Handler: cloudwatch-alerter.handler
+      FunctionName: CloudWatchAlerter
+      Role: !GetAtt 
+        - LambdaIAMRole
+        - Arn
+      Code:
+        S3Bucket: !Ref S3LambdaBucket
+        S3Key: lambdaCode.zip
+      Environment:
+        Variables:
+          SlackChannel: !Ref SlackChannel
+          SlackHook: !Ref SlackHook
+          SlackUsername: !Ref SlackUsername
+          LogGroupName: !Ref CloudTrailLogGroup
+      Runtime: nodejs10.x
+      MemorySize: '128'
+      Timeout: '180'
+      Tags:
+        - Key: Name
+          Value: CloudWatch Alerter
+        - Key: Project
+          Value: Able Solutions
+  LambdaFunctionCloudWatchLogProcessor:
+    DependsOn:
+      - LambdaIAMRole
+      - LambdaFunctionCloudWatchAlerter
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Description: Lambda Function that processes CloudWatch Log data streamed to it
+      Handler: cloudwatch-logs-processor.handler
+      FunctionName: CloudWatch-Logs-Processor
+      Role: !GetAtt 
+        - LambdaIAMRole
+        - Arn
+      Environment:
+        Variables:
+          CloudWatchAlerterLambdaArn: !GetAtt 
+            - LambdaFunctionCloudWatchAlerter
+            - Arn
+      Code:
+        S3Bucket: !Ref S3LambdaBucket
+        S3Key: lambdaCode.zip
+      Runtime: nodejs10.x
+      MemorySize: '128'
+      Tags:
+        - Key: Name
+          Value: CloudWatch Logs Processor
+        - Key: Project
+          Value: Able Solutions
+      Timeout: '60'
+  CloudWatchProcessorLambdaPermission:
+    DependsOn:
+      - LambdaFunctionCloudWatchLogProcessor
+      - CloudTrailLogGroup
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:*'
+      FunctionName: !Ref LambdaFunctionCloudWatchLogProcessor
+      Principal: logs.amazonaws.com
+      SourceArn: !GetAtt 
+        - CloudTrailLogGroup
+        - Arn
+  CloudWatchProcessorToCloudWatchAlerterPermission:
+    DependsOn:
+      - LambdaFunctionCloudWatchAlerter
+      - LambdaFunctionCloudWatchLogProcessor
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:*'
+      FunctionName: !Ref LambdaFunctionCloudWatchAlerter
+      Principal: lambda.amazonaws.com
+      SourceArn: !GetAtt 
+        - LambdaFunctionCloudWatchLogProcessor
+        - Arn
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: Unauthorised-API-Calls
+      DisplayName: Unauthorised API Calls
+      Subscription:
+        - Endpoint: !Ref EmailAddress
+          Protocol: email
+  CloudWatchAlarm:
+    DependsOn:
+      - UnauthorisedAPICallMetricFilter
+      - SNSTopic
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: Alarm to capture all unauthorised API calls
+      AlarmName: UnauthorizedAPICalls
+      AlarmActions:
+        - !Ref SNSTopic
+      ComparisonOperator: GreaterThanThreshold
+      EvaluationPeriods: 1
+      MetricName: UnauthorizedAPICallsCount
+      Namespace: LogMetrics
+      Statistic: Sum
+      TreatMissingData: notBreaching
+      Threshold: 0
+      Period: 60
