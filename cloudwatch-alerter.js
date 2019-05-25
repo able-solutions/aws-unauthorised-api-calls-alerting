@@ -7,7 +7,7 @@ const https = require('https');
 var slackHook = process.env.SlackHook;
 var slackUsername = process.env.SlackUsername;
 var slackChannel = process.env.SlackChannel;
-var logGroupName = process.env.LogGoupName
+var logGroupName = process.env.LogGroupName;
 var emoji = ":no_entry_sign:";
 var color = "#C70039";
 
@@ -55,8 +55,6 @@ exports.handler = async (event, context) => {
 
   let initialised = false;
   
-  console.log(event);
-  
   if (!initialised) {
     
     initialised = true;
@@ -77,7 +75,7 @@ exports.handler = async (event, context) => {
       let accountNumber = userIdentity.accountId;
       let eventID = message.eventID;
       
-      if(rule === 'UnauthorisedAPICalls') {
+      if(rule.includes('UnauthorisedAPICall')) {
         
         //UnauthorisedAPICallMessage
         var UnauthorisedAPICallMessage = {
@@ -118,7 +116,7 @@ exports.handler = async (event, context) => {
                   "text": "View Event Log",
                   "type": "button",
                   "style": "primary",
-                  "url": `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logEventViewer:${logGroupName};stream=${accountNumber}_CloudTrail_${region};filter=%257B%2520%2524.eventID%2520%253D%2520${eventID}%2520%257D`
+                  "url": `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logEventViewer:group=${logGroupName};stream=${accountNumber}_CloudTrail_${region};filter=%257B%2520%2524.eventID%2520%253D%2520${eventID}%2520%257D`
                 }
               ]
             },

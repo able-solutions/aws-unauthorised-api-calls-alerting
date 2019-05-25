@@ -15,7 +15,7 @@ The way are notified is by using Slack. In order to achieve this, you will need 
   - Date Created: 
     - 24/05/2019
 
-### AWS Resources this Repo will Deploy ###
+## AWS Resources this Repo will Deploy ##
 
 When deployed, this repository will create/provisions AWS resources in the AWS account deployed. To that end, please be aware that you will be charged by AWS for any resources services that you use. 
 
@@ -29,8 +29,9 @@ When deployed, this repository will create/provisions AWS resources in the AWS a
   - Cloudwatch Log Group Subscription
   - Lambda Functions
   - Lambda Permissions
+  - SNS Topic
 
-### Instructions ###
+## Instructions ##
 
 In order to deploy this solution, there are prerequisites that you need to have completed as when you run the deploy.sh script, it will ask you to input some values from these prerequisites.
 
@@ -53,3 +54,9 @@ In order to deploy this solution, there are prerequisites that you need to have 
   **Do Not Forget to Subscribe to the SNS Topic in your Emails**
 
   ![Alt text](confirm-sns-subscription-email.png?raw=true "Subscribing to the SNS Topic")
+
+##  Architecure Diagram ##
+
+Below is an overview of the architecure that will be deployed. 
+
+![Alt text](Unauthorised-API-Calls-Architecture-Overview.png?raw=true "Architecture Overview")
