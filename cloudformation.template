@@ -136,6 +136,7 @@
       }
     },
     "UnauthorisedAPICallMetricFilter": {
+      "DependsOn": [ "CloudTrailLogGroupName" ],
       "Type" : "AWS::Logs::MetricFilter",
       "Properties" : {
         "FilterPattern" : "{ ($.errorCode = *UnauthorizedOperation) || ($.errorCode = AccessDenied*) }",

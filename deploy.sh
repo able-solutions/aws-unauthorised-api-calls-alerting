@@ -58,7 +58,7 @@ aws cloudformation create-stack \
 --stack-name able-solutions-unauthorised-api-calls \
 --template-body file://cloudformation.template \
 --parameters ParameterKey=EmailAddress,ParameterValue=$EmailAddress ParameterKey=S3LambdaBucket,ParameterValue=$BucketName ParameterKey=S3BucketName,ParameterValue=$Project-cloudtrail-logs ParameterKey=CloudTrailLogGroupName,ParameterValue=$Project-cloudtrail-logs ParameterKey=SlackChannel,ParameterValue=$SlackChannel ParameterKey=SlackHook,ParameterValue=$SlackHook ParameterKey=SlackUsername,ParameterValue=Project-$Project \
---capabilities CAPABILITY_NAMED_IAM
+--capabilities CAPABILITY_NAMED_IAM --profile $AWSProfile
 
 #aws lambda create-function --function-name $FunctionName --runtime nodejs \
 #--role $Role --handler "$ZipFileName.handler" \
