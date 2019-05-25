@@ -380,7 +380,7 @@
       "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudTrailLogGroup" ],
       "Type": "AWS::Lambda::Permission",
       "Properties": {
-        "Action": "lambda:InvokeFunction",
+        "Action": "lambda:*",
         "FunctionName": { "Ref": "LambdaFunctionCloudWatchLogProcessor" },
         "Principal": "logs.amazonaws.com",
         "SourceArn": { "Fn::GetAtt": [ "CloudTrailLogGroup", "Arn" ] }
