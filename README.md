@@ -29,3 +29,23 @@ When deployed, this repository will create/provisions AWS resources in the AWS a
   - Cloudwatch Log Group Subscription
   - Lambda Functions
   - Lambda Permissions
+
+### Instructions ###
+
+In order to deploy this solution, there are prerequisites that you need to have completed as when you run the deploy.sh script, it will ask you to input some values from these prerequisites.
+
+*Prerequisites*
+
+  1. Create a Slack channel - (https://get.slack.help/hc/en-gb/articles/201402297-Create-a-channel)
+  2. Create a Web Hook for the Slack Channel - (https://get.slack.help/hc/en-gb/articles/115005265063-Incoming-webhooks-for-Slack)
+  3. You must already have an AWS Account
+  4. Create an S3 Bucket (where you will be storing the template and Lambda Function code) - (https://docs.aws.amazon.com/AmazonS3/latest/gsg/CreatingABucket.html)
+  5. You must have the AWSCLI installed and configured on your local machine - (https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
+
+*To Deploy*
+
+  1. cd into working directory
+  2. Run the deploy.sh script (./deploy.sh)
+  3. Enter relevant information when prompted
+
+  ![Alt text](deploy-script.png?raw=true "Running the deploy.sh script")
