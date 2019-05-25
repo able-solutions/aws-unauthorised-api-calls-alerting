@@ -64,8 +64,10 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [ "logs" ],
-                  "Resource": [ "*" ]
+                  "Action": [
+                    "logs:*"
+                  ],
+                  "Resource": "*"
                 }
               ]
             }
@@ -86,9 +88,6 @@
         "AccessControl": "Private",
         "VersioningConfiguration": {
           "Status": "Suspended"
-        },
-        "LoggingConfiguration" : {
-          "LogFilePrefix" : "access-logs/"
         },
         "BucketEncryption" : {
           "ServerSideEncryptionConfiguration" : [ { "ServerSideEncryptionByDefault" : { "SSEAlgorithm" : "AES256" } } ]
@@ -186,7 +185,7 @@
                 {
                   "Effect": "Allow",
                   "Action": [ "logs:*" ],
-                  "Resource": [ "*" ]
+                  "Resource": "*"
                 }
               ]
             }
@@ -199,7 +198,7 @@
                 {
                   "Effect": "Allow",
                   "Action": [ "sns:Publish*" ],
-                  "Resource": [ "*" ]
+                  "Resource": "*"
                 }
               ]
             }
