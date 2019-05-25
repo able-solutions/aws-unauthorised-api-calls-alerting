@@ -252,7 +252,9 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [ "logs:*" ],
+                  "Action": [
+                    "logs:*"
+                  ],
                   "Resource": "*"
                 }
               ]
@@ -265,7 +267,9 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [ "sns:Publish*" ],
+                  "Action": [
+                    "sns:Publish*"
+                  ],
                   "Resource": "*"
                 }
               ]
@@ -278,8 +282,10 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": [ "lambda:*" ],
-                  "Resource": [ { "Fn::Join": [ ":", [ "arn:aws:lambda", { "Ref": "AWS::Region" }, { "Ref": "AWS::AccountId" }, "function", "*", "*" ] ] } ]
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": "*"
                 }
               ]
             }
@@ -366,16 +372,6 @@
         "Timeout": "60"
       }
     },
-    "CloudWatchProcessorToCloudWatchAlerterPermission": {
-      "DependsOn": [ "LambdaFunctionCloudWatchAlerter", "LambdaFunctionCloudWatchLogProcessor" ],
-      "Type": "AWS::Lambda::Permission",
-      "Properties": {
-        "Action": "lambda:*",
-        "FunctionName": { "Ref": "LambdaFunctionCloudWatchAlerter" },
-        "Principal": "lambda.amazonaws.com",
-        "SourceArn": { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] }
-      } 
-    },
     "CloudWatchProcessorLambdaPermission": {
       "DependsOn": [ "LambdaFunctionCloudWatchLogProcessor", "CloudTrailLogGroup" ],
       "Type": "AWS::Lambda::Permission",
@@ -385,6 +381,16 @@
         "Principal": "logs.amazonaws.com",
         "SourceArn": { "Fn::GetAtt": [ "CloudTrailLogGroup", "Arn" ] }
       }  
+    },
+    "CloudWatchProcessorToCloudWatchAlerterPermission": {
+      "DependsOn": [ "LambdaFunctionCloudWatchAlerter", "LambdaFunctionCloudWatchLogProcessor" ],
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:*",
+        "FunctionName": { "Ref": "LambdaFunctionCloudWatchAlerter" },
+        "Principal": "lambda.amazonaws.com",
+        "SourceArn": { "Fn::GetAtt": [ "LambdaFunctionCloudWatchLogProcessor", "Arn" ] }
+      } 
     },
     "SNSTopic": {
       "Type": "AWS::SNS::Topic",

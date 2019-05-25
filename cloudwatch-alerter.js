@@ -3,8 +3,6 @@
 //const AWS = require('aws-sdk');
 const https = require('https');
 
-let initialised = false;
-
 //Global Slack Variables
 var slackHook = process.env.SlackHook;
 var slackUsername = process.env.SlackUsername;
@@ -53,6 +51,8 @@ var postMessage = async function(slackMessage, callback) {
 };
 
 exports.handler = async (event, context) => {
+
+  let initialised = false;
   
   console.log(event);
   

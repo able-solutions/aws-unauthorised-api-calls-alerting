@@ -2,11 +2,11 @@ const AWS = require('aws-sdk');
 const lambda = new AWS.Lambda();
 const zlib = require('zlib');
 
-let initialised = false;
-
 const cloudwatchAlerter = process.env.CloudWatchAlerterLambdaArn;
 
 exports.handler = async (event, context) => {
+
+  let initialised = false;
 
   console.log(JSON.stringify(event));
   
