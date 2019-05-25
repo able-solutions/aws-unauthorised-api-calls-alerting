@@ -43,7 +43,7 @@ echo "Creating CloudFormation Stack...."
 #read Region
 echo -n "Enter an email address that will receive alerts: "
 read EmailAddress
-echo -n "Enter a project name: "
+echo -n "Enter a project name (Lowercase Only): "
 read Project
 #echo -n "Enter a name for the CloudTrail Log Group to be created in CloudWatch: "
 #read LogGroup
