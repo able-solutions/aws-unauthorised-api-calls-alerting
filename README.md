@@ -48,4 +48,4 @@ In order to deploy this solution, there are prerequisites that you need to have 
   2. Run the deploy.sh script (./deploy.sh)
   3. Enter relevant information when prompted
 
-  ![Alt text](deploy-script.png?raw=true "Running the deploy.sh script")
+  
