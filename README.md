@@ -49,3 +49,7 @@ In order to deploy this solution, there are prerequisites that you need to have 
   3. Enter relevant information when prompted
 
   ![Alt text](deploy-script.png?raw=true "Running the deploy.sh script")
+
+  **Do Not Forget to Subscribe to the SNS Topic in your Emails**
+
+  ![Alt text](confirm-sns-subscription-email.png?raw=true "Subscribing to the SNS Topic")
