@@ -11,6 +11,10 @@ Parameters:
     Type: String
     Description: Enter the name of the S3 Bucket where the lambda code is stored.
     Default: ''
+  S3LambdaKey:
+      Type: String
+      Description: Enter the full s3 object's key path lambda.zip file.
+      Default: ''
   S3BucketName:
     Type: String
     Description: Enter a name for the S3 Bucket used to store CloudTrail logs.
@@ -250,7 +254,7 @@ Resources:
         - Arn
       Code:
         S3Bucket: !Ref S3LambdaBucket
-        S3Key: lambdaCode.zip
+        S3Key: !Ref S3LambdaKey
       Environment:
         Variables:
           SlackChannel: !Ref SlackChannel
@@ -284,7 +288,7 @@ Resources:
             - Arn
       Code:
         S3Bucket: !Ref S3LambdaBucket
-        S3Key: lambdaCode.zip
+        S3Key: !Ref S3LambdaKey
       Runtime: nodejs10.x
       MemorySize: '128'
       Tags:
