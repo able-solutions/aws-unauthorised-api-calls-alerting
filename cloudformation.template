@@ -110,8 +110,76 @@
         ]
       }
     },
+    "S3BucketPolicy": {
+      "DependsOn": [ "S3Bucket" ],
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "S3Bucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": [
+                  { "Fn::Join": [ ":", [ "arn:aws:iam:", { "Ref": "AWS::AccountId" }, "root" ] ] }
+                ]
+              },
+              "Action": [
+                "s3:GetBucketAcl",
+                "s3:GetObjectAcl",
+                "s3:PutBucketAcl",
+                "s3:PutObjectAcl",
+                "s3:PutObjectTagging",
+                "s3:PutObject"
+              ],
+              "Resource": [
+                { "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "S3Bucket" } ] ] },
+                { "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "S3Bucket" }, "\/*" ] ] }
+              ]
+            },
+            {
+              "Sid": "Allow  CloudTrail to Check ACL",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+              },
+              "Action": "s3:*",
+              "Resource": {
+                "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "S3Bucket" } ] ]
+              }
+            },
+            {
+              "Sid": "Allow CloudTrail to Write",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+              },
+              "Action": "s3:PutObject",
+              "Resource": {
+                "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "S3Bucket" }, "/*" ] ]
+              },
+              "Condition": {"StringEquals": {"s3:x-amz-acl": "bucket-owner-full-control"}}
+            },
+            {
+              "Sid": "Allow CloudTrail to Get",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+              },
+              "Action": "s3:GetObject",
+              "Resource": {
+                "Fn::Join": [ "", [ "arn:aws:s3:::", { "Ref": "S3Bucket" }, "/*" ] ]
+              }
+            }
+          ]
+        }
+      }
+    },
     "CloudTrail": {
-      "DependsOn": [ "CloudTrailLogsRole", "CloudTrailLogGroup", "S3Bucket" ],
+      "DependsOn": [ "CloudTrailLogsRole", "CloudTrailLogGroup", "S3BucketPolicy" ],
       "Type": "AWS::CloudTrail::Trail",
       "Properties": {
         "CloudWatchLogsLogGroupArn" : { "Fn::GetAtt": [ "CloudTrailLogGroup", "Arn" ] },
