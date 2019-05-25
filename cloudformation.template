@@ -27,7 +27,7 @@
       "Description": "Enter the Slack channel you would like to post alerts to. This will start with #",
       "Default": ""
     },
-    "SlackWebHook": {
+    "SlackHook": {
       "Type": "String",
       "Description": "Copy the URL for the Webhook created for the Slack channel just specified.",
       "Default": ""

@@ -50,14 +50,14 @@ read Project
 echo -n "Enter the Slack channel you would like to post alerts to. Must start with #: "
 read SlackChannel
 echo -n "Copy the URL for the Webhook created for the Slack channel just specified: "
-read SlackWebHook
+read SlackHook
 #echo -n "Enter a username that you would like to be displayed, when messages are posted to Slack: "
 #read SlackUsername
 
 aws cloudformation create-stack \
 --stack-name able-solutions-unauthorised-api-calls \
 --template-body file://cloudformation.template \
---parameters ParameterKey=EmailAddress,ParameterValue=$EmailAddress ParameterKey=S3LambdaBucket,ParameterValue=$BucketName ParameterKey=S3BucketName,ParameterValue=$Project-cloudtrail-logs ParameterKey=CloudTrailLogGroupName,ParameterValue=$Project-cloudtrail-logs ParameterKey=SlackChannel,ParameterValue=$SlackChannel ParameterKey=SlackWebHook,ParameterValue=$SlackWebHook ParameterKey=SlackUsername,ParameterValue=Project-$Project 
+--parameters ParameterKey=EmailAddress,ParameterValue=$EmailAddress ParameterKey=S3LambdaBucket,ParameterValue=$BucketName ParameterKey=S3BucketName,ParameterValue=$Project-cloudtrail-logs ParameterKey=CloudTrailLogGroupName,ParameterValue=$Project-cloudtrail-logs ParameterKey=SlackChannel,ParameterValue=$SlackChannel ParameterKey=SlackWebHook,ParameterValue=$SlackHook ParameterKey=SlackUsername,ParameterValue=Project-$Project 
 
 #aws lambda create-function --function-name $FunctionName --runtime nodejs \
 #--role $Role --handler "$ZipFileName.handler" \
