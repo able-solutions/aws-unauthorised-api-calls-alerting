@@ -7,6 +7,7 @@ const https = require('https');
 var slackHook = process.env.SlackHook;
 var slackUsername = process.env.SlackUsername;
 var slackChannel = process.env.SlackChannel;
+var logGroupName = process.env.LogGoupName
 var emoji = ":no_entry_sign:";
 var color = "#C70039";
 
@@ -14,7 +15,7 @@ var color = "#C70039";
 async function wait() {
   return new Promise((resolve) => {
     setTimeout(resolve, 200);
-  })
+  });
 }
 
 //POST Function
@@ -117,7 +118,7 @@ exports.handler = async (event, context) => {
                   "text": "View Event Log",
                   "type": "button",
                   "style": "primary",
-                  "url": `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logEventViewer:group=aws-management-cloudtrail-logs;stream=${accountNumber}_CloudTrail_${region};filter=%257B%2520%2524.eventID%2520%253D%2520${eventID}%2520%257D`
+                  "url": `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logEventViewer:${logGroupName};stream=${accountNumber}_CloudTrail_${region};filter=%257B%2520%2524.eventID%2520%253D%2520${eventID}%2520%257D`
                 }
               ]
             },

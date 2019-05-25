@@ -295,7 +295,7 @@
       }
     },
     "LambdaFunctionCloudWatchAlerter": {
-      "DependsOn": [ "LambdaIAMRole" ],
+      "DependsOn": [ "LambdaIAMRole", "CloudTrailLogGroup" ],
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "Description": "Lambda Function that posts CloudWatch alarm states to Slack",
@@ -318,6 +318,9 @@
             },
             "SlackUsername": {
               "Ref": "SlackUsername"
+            },
+            "LogGroupName": {
+              "Ref": "CloudTrailLogGroup"
             }
           }
         },

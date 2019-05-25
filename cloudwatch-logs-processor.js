@@ -17,8 +17,15 @@ exports.handler = async (event, context) => {
     const payload = Buffer.from(event.awslogs.data, 'base64');
     const parsed = JSON.parse(zlib.gunzipSync(payload).toString('utf8'));
     const subscription = parsed.subscriptionFilters[0];
-    const rule = (subscription.split('-')[4]).replace('LogSubscription','');
+    const subscriptionArray = subscription.split('-');
     const logData = parsed.logEvents;
+    let rule = "";
+    
+    for (var each of subscriptionArray) {
+      if (each.includes('LogSubscription')) {
+        rule = each.replace('LogSubscription', '');
+      }
+    }
     
     const newPayload = JSON.stringify({
       Rule: rule,
