@@ -3,3 +3,6 @@
 
 # mac hidden files]
 *.DS_Store
+
+# personal local working notes
+_nuggets.md

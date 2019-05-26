@@ -347,3 +347,10 @@ Resources:
       TreatMissingData: notBreaching
       Threshold: 0
       Period: 60
+
+Outputs:
+  CloudTrailBucketName:
+    Description: Information about the value
+    Value: !Ref S3Bucket
+    #Export:
+    #  Name: Value to export

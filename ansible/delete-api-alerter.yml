@@ -1,6 +1,7 @@
 ---
 - hosts: localhost
   vars:
-    stack_action: "create"
+    stack_action: "delete"
+    
   roles:
     - api-alerter

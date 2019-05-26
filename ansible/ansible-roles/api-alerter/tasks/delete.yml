@@ -1,0 +1,97 @@
+---
+- name: check if stack exists?
+  shell: |
+        if aws cloudformation describe-stacks --stack-name {{ stack_name }} \
+        --query "Stacks[0].StackName" --region {{ region }} --output text 2>&1 | grep -q '{{ stack_name }} does not exist'
+        then
+            echo false
+        else
+            echo true
+        fi
+  delegate_to: localhost
+  run_once: true
+  register: the_stack_exists
+  when: stack_name is defined 
+
+- name: set fact for the cloudtrail bucket name
+  set_fact: 
+    the_stack_exists={{ the_stack_exists.stdout }}
+
+- name: show the result of check stack exists?
+  debug:
+    msg: "{{ the_stack_exists }}"
+
+- name: get cloudformation bucket name from cli command
+  command: >
+        aws cloudformation describe-stacks
+          --region {{ region }}
+          --stack-name {{ stack_name }}
+          --output text
+          --query 'Stacks[0].Outputs[?OutputKey==`{{ stack_cloudtrail_bucket_name }}`].OutputValue'
+  
+  register: cloudtrail_bucket_name
+  delegate_to: 127.0.0.1
+  run_once: true
+  when: the_stack_exists
+
+- name: set fact for the cloudtrail bucket name
+  set_fact: 
+    cloudtrail_bucket_name={{ cloudtrail_bucket_name.stdout }}
+  when: the_stack_exists
+
+- name: show the cloud trail bucket name from gathered fact
+  debug:
+    msg: "{{ cloudtrail_bucket_name }}"
+  when: the_stack_exists
+
+- name: show the_bucket variable
+  aws_s3_bucket_facts:
+  register: the_bucket
+  when: the_stack_exists
+
+#- name: show the the_bucket.ansible_facts
+#  debug:
+#    msg: "{{ the_bucket.ansible_facts }}"
+
+- name: check if bucket exists
+  shell: |
+        if aws s3 ls "s3://{{ cloudtrail_bucket_name }}" 2>&1 | grep -q 'NoSuchBucket'
+        then
+            echo 'false'
+        else
+            echo 'true'
+        fi
+  delegate_to: 127.0.0.1
+  run_once: true
+  register: the_bucket_exists
+  when: cloudtrail_bucket_name is defined and the_stack_exists
+
+- name: show the the_bucket_exists
+  debug:
+    msg: "{{ the_bucket_exists }}"
+  when: the_stack_exists
+
+- name: set fact for the_bucket_exists
+  set_fact: 
+    the_bucket_exists={{ the_bucket_exists.stdout }}
+  when: the_stack_exists
+
+- name: purge bucket of all objects
+  command: "python {{ role_path}}/files/helpers/deleteAllObjectVersions.py {{ cloudtrail_bucket_name }}"
+  delegate_to: 127.0.0.1
+  run_once: true
+  when: 
+    - cloudtrail_bucket_name is defined and the_bucket_exists and the_stack_exists
+
+# s3-bucket-delete
+#- name: Delete a bucket
+#  aws_s3:
+#    bucket: "{{ cloudtrail_bucket_name }}"
+#  when: cloudtrail_bucket_name is defined and the_bucket_exists and the_stack_exists
+#    mode: delete
+
+- name: delete stack
+  cloudformation:
+      stack_name: "{{ stack_name }}"
+      state: absent
+      region: "{{ region }}"
