@@ -32,22 +32,22 @@
   register: cloudtrail_bucket_name
   delegate_to: 127.0.0.1
   run_once: true
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 - name: set fact for the cloudtrail bucket name
   set_fact: 
     cloudtrail_bucket_name={{ cloudtrail_bucket_name.stdout }}
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 - name: show the cloud trail bucket name from gathered fact
   debug:
     msg: "{{ cloudtrail_bucket_name }}"
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 - name: show the_bucket variable
   aws_s3_bucket_facts:
   register: the_bucket
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 #- name: show the the_bucket.ansible_facts
 #  debug:
@@ -64,24 +64,24 @@
   delegate_to: 127.0.0.1
   run_once: true
   register: the_bucket_exists
-  when: cloudtrail_bucket_name is defined and the_stack_exists
+  when: cloudtrail_bucket_name is defined and the_stack_exists|bool
 
 - name: show the the_bucket_exists
   debug:
     msg: "{{ the_bucket_exists }}"
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 - name: set fact for the_bucket_exists
   set_fact: 
     the_bucket_exists={{ the_bucket_exists.stdout }}
-  when: the_stack_exists
+  when: the_stack_exists|bool
 
 - name: purge bucket of all objects
   command: "python {{ role_path}}/files/helpers/deleteAllObjectVersions.py {{ cloudtrail_bucket_name }}"
   delegate_to: 127.0.0.1
   run_once: true
   when: 
-    - cloudtrail_bucket_name is defined and the_bucket_exists and the_stack_exists
+    - cloudtrail_bucket_name is defined and the_bucket_exists and the_stack_exists|bool
 
 # s3-bucket-delete
 #- name: Delete a bucket
