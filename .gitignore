@@ -1,0 +1,15 @@
+# ansible
+*.retry
+
+# mac hidden files]
+*.DS_Store
+
+# personal local working notes
+_nuggets.md
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
